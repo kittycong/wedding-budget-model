@@ -141,6 +141,7 @@ td.pos{color:var(--text)!important}td.neg{color:var(--text)!important}td.neu{col
   <button class="tn"     onclick="goTab('t5',this)">육아 생활비</button>
   <button class="tn"     onclick="goTab('t6',this)">대출·이자</button>
   <button class="tn"     onclick="goTab('t7',this)">체크리스트</button>
+  <button class="tn"     onclick="goTab('t8',this)">구글시트 저장</button>
 </div>
 
 <!-- ═══════════════ T1: 준비자금 개요 ═══════════════ -->
@@ -517,6 +518,39 @@ td.pos{color:var(--text)!important}td.neg{color:var(--text)!important}td.neu{col
   </div>
 </div>
 
+<!-- ═══════════════ T8: 구글시트 저장 ═══════════════ -->
+<div id="t8" class="pane">
+  <p class="st">Google Sheets Sync</p>
+  <div class="wrap card">
+    <div class="card-title">구글시트 동기화 설정</div>
+    <div class="form-grid" style="grid-template-columns:1fr 1.5fr auto auto">
+      <div class="field"><label for="sync-user-key">계정 키</label><input id="sync-user-key" type="text" placeholder="예: kittycong@gmail.com"></div>
+      <div class="field"><label for="sync-url">Apps Script 웹앱 URL</label><input id="sync-url" type="text" placeholder="https://script.google.com/macros/s/.../exec"></div>
+      <button class="btn" type="button" onclick="saveSyncSettings()">설정 저장</button>
+      <button class="btn secondary" type="button" onclick="loadCloudData()">불러오기</button>
+    </div>
+    <div style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn" type="button" onclick="saveCloudData(true)">지금 구글시트에 저장</button>
+      <button class="btn secondary" type="button" onclick="copyAppsScriptGuide()">설정 안내 복사</button>
+      <span class="badge b-caut" id="sync-status">구글시트 미연결</span>
+    </div>
+  </div>
+  <div class="wrap tbl-wrap">
+    <div class="tbl-head">설정 순서</div>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th class="l">단계</th><th class="l">해야 할 일</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="l dimtxt">Google Sheets에서 새 스프레드시트를 만들고 URL의 스프레드시트 ID를 복사합니다.</td></tr>
+        <tr><td>2</td><td class="l dimtxt">Extensions > Apps Script에서 저장소의 <code>apps-script/Code.gs</code> 내용을 붙여넣고 <code>SHEET_ID</code> 값을 바꿉니다.</td></tr>
+        <tr><td>3</td><td class="l dimtxt">Deploy > New deployment > Web app으로 배포합니다. Execute as는 본인, Access는 Anyone 또는 Anyone with Google account로 둡니다.</td></tr>
+        <tr><td>4</td><td class="l dimtxt">배포된 Web app URL을 위 입력칸에 넣고 계정 키를 입력한 뒤 설정 저장을 누릅니다.</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════
 //  GLOBAL STATE & CONSTANTS
@@ -687,15 +721,33 @@ const ASSET_DATA = [
 ];
 
 const STORAGE_KEY='weddingBudgetModel.v2';
+const SYNC_KEY='weddingBudgetModel.sync.v1';
 let USER_NOTES=[];
 let USER_SCHEDULES=[];
+let SYNC={url:'',userKey:'',lastSaved:'',lastLoaded:''};
 
 function readSavedData(){
   try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');}
   catch{return{};}
 }
-function loadSavedData(){
-  const saved=readSavedData();
+function readSyncSettings(){
+  try{return JSON.parse(localStorage.getItem(SYNC_KEY)||'{}');}
+  catch{return{};}
+}
+function currentPayload(){
+  return{
+    state:S,
+    customWed:WED_DATA.filter(r=>String(r[0]).startsWith('cw')),
+    customHon:HON_DATA.filter(r=>String(r[0]).startsWith('ch')),
+    wedStates:Object.fromEntries(WED_DATA.map(r=>[r[0],{budget:r[4],active:r[9]}])),
+    honStates:Object.fromEntries(HON_DATA.map(r=>[r[0],{budget:r[4],active:r[8]}])),
+    notes:USER_NOTES,
+    schedules:USER_SCHEDULES,
+    updatedAt:new Date().toISOString(),
+  };
+}
+function applyPayload(saved){
+  if(!saved)return;
   if(saved.state)Object.assign(S,saved.state);
   if(Array.isArray(saved.customWed))saved.customWed.forEach(r=>{if(!WED_DATA.some(x=>x[0]===r[0]))WED_DATA.push(r);});
   if(Array.isArray(saved.customHon))saved.customHon.forEach(r=>{if(!HON_DATA.some(x=>x[0]===r[0]))HON_DATA.push(r);});
@@ -708,22 +760,85 @@ function loadSavedData(){
   USER_NOTES=Array.isArray(saved.notes)?saved.notes:[];
   USER_SCHEDULES=Array.isArray(saved.schedules)?saved.schedules:[];
 }
+function loadSavedData(){
+  applyPayload(readSavedData());
+  SYNC=Object.assign(SYNC,readSyncSettings());
+}
 function saveAppData(){
-  const payload={
-    state:S,
-    customWed:WED_DATA.filter(r=>String(r[0]).startsWith('cw')),
-    customHon:HON_DATA.filter(r=>String(r[0]).startsWith('ch')),
-    wedStates:Object.fromEntries(WED_DATA.map(r=>[r[0],{budget:r[4],active:r[9]}])),
-    honStates:Object.fromEntries(HON_DATA.map(r=>[r[0],{budget:r[4],active:r[8]}])),
-    notes:USER_NOTES,
-    schedules:USER_SCHEDULES,
-  };
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(payload));
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(currentPayload()));
+  if(SYNC.url&&SYNC.userKey)saveCloudData(false);
 }
 function esc(v){
   return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
 function inputVal(id){return document.getElementById(id)?.value?.trim()||'';}
+
+function setSyncStatus(text,type='caut'){
+  const el=document.getElementById('sync-status');
+  if(!el)return;
+  el.className=`badge b-${type}`;
+  el.textContent=text;
+}
+function saveSyncSettings(){
+  SYNC.url=inputVal('sync-url');
+  SYNC.userKey=inputVal('sync-user-key');
+  localStorage.setItem(SYNC_KEY,JSON.stringify(SYNC));
+  setSyncStatus(SYNC.url&&SYNC.userKey?'구글시트 연결 설정 저장됨':'구글시트 미연결',SYNC.url&&SYNC.userKey?'ok':'caut');
+}
+function renderT8(){
+  document.getElementById('sync-url').value=SYNC.url||'';
+  document.getElementById('sync-user-key').value=SYNC.userKey||'';
+  const msg=SYNC.url&&SYNC.userKey
+    ? `연결됨${SYNC.lastSaved?' · 마지막 저장 '+SYNC.lastSaved:''}`
+    : '구글시트 미연결';
+  setSyncStatus(msg,SYNC.url&&SYNC.userKey?'ok':'caut');
+}
+async function saveCloudData(showResult){
+  if(!SYNC.url||!SYNC.userKey){
+    if(showResult)setSyncStatus('웹앱 URL과 계정 키를 먼저 입력하세요','warn');
+    return;
+  }
+  const body=JSON.stringify({action:'save',userKey:SYNC.userKey,payload:currentPayload()});
+  try{
+    await fetch(SYNC.url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body});
+    SYNC.lastSaved=new Date().toLocaleString('ko-KR');
+    localStorage.setItem(SYNC_KEY,JSON.stringify(SYNC));
+    if(showResult)setSyncStatus('구글시트 저장 요청 완료', 'ok');
+  }catch(e){
+    if(showResult)setSyncStatus('구글시트 저장 실패: '+e.message,'warn');
+  }
+}
+function loadCloudData(){
+  if(!SYNC.url||!SYNC.userKey){setSyncStatus('웹앱 URL과 계정 키를 먼저 입력하세요','warn');return;}
+  const cb='loadWeddingBudget_'+Date.now();
+  window[cb]=function(res){
+    try{
+      if(res&&res.ok&&res.payload){
+        applyPayload(res.payload);
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(currentPayload()));
+        SYNC.lastLoaded=new Date().toLocaleString('ko-KR');
+        localStorage.setItem(SYNC_KEY,JSON.stringify(SYNC));
+        setSyncStatus('구글시트에서 불러오기 완료','ok');
+        renderT1();renderT8();
+      }else{
+        setSyncStatus((res&&res.error)||'저장된 데이터가 없습니다','caut');
+      }
+    }finally{
+      delete window[cb];
+      document.getElementById(cb)?.remove();
+    }
+  };
+  const script=document.createElement('script');
+  script.id=cb;
+  script.src=`${SYNC.url}?action=load&userKey=${encodeURIComponent(SYNC.userKey)}&callback=${cb}`;
+  script.onerror=()=>{setSyncStatus('구글시트 불러오기 실패','warn');delete window[cb];script.remove();};
+  document.body.appendChild(script);
+}
+function copyAppsScriptGuide(){
+  const text='1) Google Sheets 새 파일 생성\\n2) 확장 프로그램 > Apps Script 열기\\n3) 저장소 apps-script/Code.gs 붙여넣기\\n4) SHEET_ID 값을 스프레드시트 ID로 변경\\n5) 배포 > 새 배포 > 웹 앱 > 실행 사용자: 나, 액세스: Anyone 또는 Anyone with Google account\\n6) Web app URL을 이 앱의 구글시트 저장 탭에 붙여넣기';
+  navigator.clipboard?.writeText(text);
+  setSyncStatus('설정 안내를 클립보드에 복사했습니다','ok');
+}
 
 // ══════════════════════════════════════════
 //  UTILS
@@ -756,7 +871,7 @@ function goTab(id,el){
   document.querySelectorAll('.tn').forEach(b=>b.classList.remove('on'));
   document.getElementById(id).classList.add('on');
   el.classList.add('on');
-  const renders={t1:renderT1,t2:renderT2,t3:renderT3,t4:renderT4,t5:renderT5,t6:renderT6,t7:renderT7};
+  const renders={t1:renderT1,t2:renderT2,t3:renderT3,t4:renderT4,t5:renderT5,t6:renderT6,t7:renderT7,t8:renderT8};
   if(renders[id])renders[id]();
 }
 
