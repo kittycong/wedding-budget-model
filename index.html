@@ -56,6 +56,19 @@ input[type=range]{-webkit-appearance:none;width:100%;height:4px;background:var(-
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:100px;background:var(--bg);border:2px solid var(--inverse);cursor:pointer;transition:transform .15s}
 input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
 select{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:4px;font-size:12px;font-family:inherit;font-weight:600;outline:none;cursor:pointer}
+input[type=text],input[type=number],input[type=date],textarea{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:4px;font-size:12px;font-family:inherit;font-weight:600;outline:none}
+textarea{min-height:92px;resize:vertical;line-height:1.6}
+input[type=text]:focus-visible,input[type=number]:focus-visible,input[type=date]:focus-visible,textarea:focus-visible{outline:2px solid var(--focus);outline-offset:3px;box-shadow:0 0 0 1px var(--focusInner)}
+.btn{border:1px solid var(--bg);background:var(--bg);color:var(--inverse);border-radius:4px;padding:10px 15px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#222222}
+.btn.secondary{background:var(--surface2);color:var(--text);border-color:var(--border)}
+.field label{display:block;font-size:10px;color:var(--dim);margin-bottom:8px;text-transform:uppercase}
+.form-grid{display:grid;grid-template-columns:1.2fr 1fr .7fr 1.4fr auto;gap:10px;align-items:end}
+.form-grid.schedule{grid-template-columns:160px 1fr 1.5fr auto}
+.memo-item{border-top:1px solid var(--border);padding:12px 0;font-size:12px;color:var(--dim);line-height:1.65}
+.memo-item:first-child{border-top:0;padding-top:0}
+.memo-title{font-weight:700;color:var(--text);margin-bottom:4px}
+@media(max-width:760px){.form-grid,.form-grid.schedule{grid-template-columns:1fr}.btn{width:100%}}
 /* TABLE */
 .tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden}
 .tbl-head{padding:15px 25px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
@@ -175,6 +188,16 @@ td.pos{color:var(--text)!important}td.neg{color:var(--text)!important}td.neu{col
 <!-- ═══════════════ T2: 웨딩 세부 ═══════════════ -->
 <div id="t2" class="pane">
   <p class="st">웨딩 항목별 세부 예산 — 금액 직접 수정 가능</p>
+  <div class="wrap card">
+    <div class="card-title">웨딩 항목 직접 추가</div>
+    <div class="form-grid">
+      <div class="field"><label for="wed-add-cat">카테고리</label><input id="wed-add-cat" type="text" value="기타" placeholder="예: 예식장"></div>
+      <div class="field"><label for="wed-add-item">항목</label><input id="wed-add-item" type="text" placeholder="예: 혼주 메이크업"></div>
+      <div class="field"><label for="wed-add-budget">예산(만원)</label><input id="wed-add-budget" type="number" min="0" step="1" placeholder="0"></div>
+      <div class="field"><label for="wed-add-note">메모</label><input id="wed-add-note" type="text" placeholder="업체명, 계약 조건, 하고 싶은 말"></div>
+      <button class="btn" type="button" onclick="addWedItem()">추가</button>
+    </div>
+  </div>
   <div class="wrap tbl-wrap">
     <div class="tbl-head">
       <span>항목 체크 시 예산에서 제외 (불필요 항목)</span>
@@ -212,6 +235,16 @@ td.pos{color:var(--text)!important}td.neg{color:var(--text)!important}td.neu{col
 <!-- ═══════════════ T3: 혼수 세부 ═══════════════ -->
 <div id="t3" class="pane">
   <p class="st">혼수 항목별 세부 — 필요/불필요 체크, 금액 수정 가능</p>
+  <div class="wrap card">
+    <div class="card-title">혼수 항목 직접 추가</div>
+    <div class="form-grid">
+      <div class="field"><label for="hon-add-cat">카테고리</label><input id="hon-add-cat" type="text" value="생활" placeholder="예: 주방"></div>
+      <div class="field"><label for="hon-add-item">품목</label><input id="hon-add-item" type="text" placeholder="예: 식기세트"></div>
+      <div class="field"><label for="hon-add-budget">예산(만원)</label><input id="hon-add-budget" type="number" min="0" step="1" placeholder="0"></div>
+      <div class="field"><label for="hon-add-note">메모</label><input id="hon-add-note" type="text" placeholder="브랜드, 사이즈, 구매처"></div>
+      <button class="btn" type="button" onclick="addHonItem()">추가</button>
+    </div>
+  </div>
   <div class="wrap" style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem">
     <div class="pill">
       <button class="pl on" onclick="honFilter('all',this)">전체</button>
@@ -441,6 +474,38 @@ td.pos{color:var(--text)!important}td.neg{color:var(--text)!important}td.neu{col
     </table>
     </div>
   </div>
+  <p class="st">메모·하고 싶은 말</p>
+  <div class="wrap g2">
+    <div class="card">
+      <div class="card-title">메모 작성</div>
+      <div class="field" style="margin-bottom:10px"><label for="memo-title">제목</label><input id="memo-title" type="text" placeholder="예: 양가 상의할 내용"></div>
+      <div class="field" style="margin-bottom:10px"><label for="memo-body">내용</label><textarea id="memo-body" placeholder="하고 싶은 말, 결정 전 확인할 내용, 업체 문의사항"></textarea></div>
+      <button class="btn" type="button" onclick="addMemo()">메모 저장</button>
+    </div>
+    <div class="card">
+      <div class="card-title">저장된 메모</div>
+      <div id="memo-list" class="memo-list"></div>
+    </div>
+  </div>
+  <p class="st">실제 달력 일정</p>
+  <div class="wrap card">
+    <div class="card-title">일정 추가</div>
+    <div class="form-grid schedule">
+      <div class="field"><label for="schedule-date">날짜</label><input id="schedule-date" type="date"></div>
+      <div class="field"><label for="schedule-title">일정명</label><input id="schedule-title" type="text" placeholder="예: 웨딩홀 상담"></div>
+      <div class="field"><label for="schedule-note">메모</label><input id="schedule-note" type="text" placeholder="시간, 장소, 준비물"></div>
+      <button class="btn" type="button" onclick="addSchedule()">일정 저장</button>
+    </div>
+  </div>
+  <div class="wrap tbl-wrap">
+    <div class="tbl-head">저장된 실제 일정</div>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th class="l">날짜</th><th class="l">일정</th><th class="l">메모</th><th>관리</th></tr></thead>
+      <tbody id="schedule-tbody"></tbody>
+    </table>
+    </div>
+  </div>
   <p class="st">계좌 분리 운영 구조</p>
   <div class="wrap g2">
     <div class="card"><div class="card-title">결혼 전 계좌</div><div id="acct-pre"></div></div>
@@ -620,6 +685,45 @@ const ASSET_DATA = [
   {item:'차량 구입·교체 준비금',type:'선택자산',target:3000,note:'출퇴근·육아 이동성 필요 시'},
   {item:'주택 갈아타기 종잣돈',type:'장기자산',target:5000,note:'청약, 매매, 보증금 증액 대비'},
 ];
+
+const STORAGE_KEY='weddingBudgetModel.v2';
+let USER_NOTES=[];
+let USER_SCHEDULES=[];
+
+function readSavedData(){
+  try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');}
+  catch{return{};}
+}
+function loadSavedData(){
+  const saved=readSavedData();
+  if(saved.state)Object.assign(S,saved.state);
+  if(Array.isArray(saved.customWed))saved.customWed.forEach(r=>{if(!WED_DATA.some(x=>x[0]===r[0]))WED_DATA.push(r);});
+  if(Array.isArray(saved.customHon))saved.customHon.forEach(r=>{if(!HON_DATA.some(x=>x[0]===r[0]))HON_DATA.push(r);});
+  if(saved.wedStates)Object.entries(saved.wedStates).forEach(([id,data])=>{
+    const row=WED_DATA.find(r=>r[0]===id); if(row){row[4]=data.budget; row[9]=data.active;}
+  });
+  if(saved.honStates)Object.entries(saved.honStates).forEach(([id,data])=>{
+    const row=HON_DATA.find(r=>r[0]===id); if(row){row[4]=data.budget; row[8]=data.active;}
+  });
+  USER_NOTES=Array.isArray(saved.notes)?saved.notes:[];
+  USER_SCHEDULES=Array.isArray(saved.schedules)?saved.schedules:[];
+}
+function saveAppData(){
+  const payload={
+    state:S,
+    customWed:WED_DATA.filter(r=>String(r[0]).startsWith('cw')),
+    customHon:HON_DATA.filter(r=>String(r[0]).startsWith('ch')),
+    wedStates:Object.fromEntries(WED_DATA.map(r=>[r[0],{budget:r[4],active:r[9]}])),
+    honStates:Object.fromEntries(HON_DATA.map(r=>[r[0],{budget:r[4],active:r[8]}])),
+    notes:USER_NOTES,
+    schedules:USER_SCHEDULES,
+  };
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(payload));
+}
+function esc(v){
+  return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function inputVal(id){return document.getElementById(id)?.value?.trim()||'';}
 
 // ══════════════════════════════════════════
 //  UTILS
@@ -844,12 +948,23 @@ function renderT2(){
 function toggleWed(id,v){
   const r=WED_DATA.find(r=>r[0]===id);
   if(r){r[9]=v; const tr=document.querySelector(`#ck-${id}`)?.closest('tr');if(tr)tr.style.opacity=v?'1':'0.4';}
-  refreshWedTotals();renderT1();
+  saveAppData();refreshWedTotals();renderT1();
 }
 function updateWedAmt(id,v){
   const r=WED_DATA.find(r=>r[0]===id);
   if(r)r[4]=v||0;
-  refreshWedTotals();renderT1();
+  saveAppData();refreshWedTotals();renderT1();
+}
+function addWedItem(){
+  const item=inputVal('wed-add-item');
+  if(!item){document.getElementById('wed-add-item').focus();return;}
+  const cat=inputVal('wed-add-cat')||'기타';
+  const budget=Number(inputVal('wed-add-budget')||0);
+  const note=inputVal('wed-add-note');
+  const id='cw'+Date.now();
+  WED_DATA.push([id,cat,item,note||'직접 추가 항목',String(budget),'0',String(Math.max(budget,0)),0,note,true]);
+  ['wed-add-item','wed-add-budget','wed-add-note'].forEach(id=>document.getElementById(id).value='');
+  saveAppData();renderT2();renderT1();
 }
 function refreshWedTotals(){
   const total=wedTotal();
@@ -925,12 +1040,23 @@ function renderT3(){
 function toggleHon(id,v){
   const r=HON_DATA.find(r=>r[0]===id);
   if(r){r[8]=v; const tr=document.querySelector(`#ck-${id}`)?.closest('tr');if(tr)tr.style.opacity=v?'1':'0.45';}
-  refreshHonTotals();renderT1();
+  saveAppData();refreshHonTotals();renderT1();
 }
 function updateHonAmt(id,v){
   const r=HON_DATA.find(r=>r[0]===id);
   if(r)r[4]=v||0;
-  refreshHonTotals();renderT1();
+  saveAppData();refreshHonTotals();renderT1();
+}
+function addHonItem(){
+  const item=inputVal('hon-add-item');
+  if(!item){document.getElementById('hon-add-item').focus();return;}
+  const cat=inputVal('hon-add-cat')||'생활';
+  const budget=Number(inputVal('hon-add-budget')||0);
+  const note=inputVal('hon-add-note');
+  const id='ch'+Date.now();
+  HON_DATA.push([id,cat,item,note||'직접 추가',''+budget,'0',''+Math.max(budget,0),'선택',true]);
+  ['hon-add-item','hon-add-budget','hon-add-note'].forEach(id=>document.getElementById(id).value='');
+  saveAppData();renderT3();renderT1();
 }
 function refreshHonTotals(){
   const total=honTotal();
@@ -1267,6 +1393,54 @@ function renderRateChart(){
 // ══════════════════════════════════════════
 //  T7: CHECKLIST
 // ══════════════════════════════════════════
+function addMemo(){
+  const title=inputVal('memo-title')||'메모';
+  const body=inputVal('memo-body');
+  if(!body){document.getElementById('memo-body').focus();return;}
+  USER_NOTES.unshift({id:'m'+Date.now(),title,body,created:new Date().toISOString().slice(0,10)});
+  document.getElementById('memo-title').value='';
+  document.getElementById('memo-body').value='';
+  saveAppData();renderUserNotesSchedules();
+}
+function deleteMemo(id){
+  USER_NOTES=USER_NOTES.filter(n=>n.id!==id);
+  saveAppData();renderUserNotesSchedules();
+}
+function addSchedule(){
+  const date=inputVal('schedule-date');
+  const title=inputVal('schedule-title');
+  if(!date){document.getElementById('schedule-date').focus();return;}
+  if(!title){document.getElementById('schedule-title').focus();return;}
+  USER_SCHEDULES.push({id:'s'+Date.now(),date,title,note:inputVal('schedule-note')});
+  USER_SCHEDULES.sort((a,b)=>a.date.localeCompare(b.date));
+  ['schedule-date','schedule-title','schedule-note'].forEach(id=>document.getElementById(id).value='');
+  saveAppData();renderUserNotesSchedules();
+}
+function deleteSchedule(id){
+  USER_SCHEDULES=USER_SCHEDULES.filter(s=>s.id!==id);
+  saveAppData();renderUserNotesSchedules();
+}
+function renderUserNotesSchedules(){
+  const memoList=document.getElementById('memo-list');
+  if(memoList){
+    memoList.innerHTML=USER_NOTES.length?USER_NOTES.map(n=>`
+      <div class="memo-item">
+        <div class="memo-title">${esc(n.title)} <span style="font-family:'DM Mono',monospace;color:var(--muted);font-size:10px">${esc(n.created)}</span></div>
+        <div>${esc(n.body).replace(/\n/g,'<br>')}</div>
+        <button class="btn secondary" type="button" style="margin-top:8px" onclick="deleteMemo('${n.id}')">삭제</button>
+      </div>`).join(''):'<div class="memo-item">저장된 메모가 없습니다.</div>';
+  }
+  const scheduleBody=document.getElementById('schedule-tbody');
+  if(scheduleBody){
+    scheduleBody.innerHTML=USER_SCHEDULES.length?USER_SCHEDULES.map(s=>`
+      <tr>
+        <td>${esc(s.date)}</td>
+        <td class="l">${esc(s.title)}</td>
+        <td class="dimtxt l">${esc(s.note||'')}</td>
+        <td><button class="btn secondary" type="button" onclick="deleteSchedule('${s.id}')">삭제</button></td>
+      </tr>`).join(''):'<tr><td colspan="4" class="dimtxt l">저장된 일정이 없습니다.</td></tr>';
+  }
+}
 function renderT7(){
   const cl=[
     {t:'D-12개월',a:'양가 인사·총예산 합의·전세금 계산',m:'저축 계획 수립·계좌 분리',hl:false},
@@ -1333,6 +1507,7 @@ function renderT7(){
     <div class="tip-ic" style="background:${t.bg}">${t.ic}</div>
     <div class="tip-tx"><strong>${t.t}</strong><br>${t.b}</div>
   </div>`).join('');
+  renderUserNotesSchedules();
 }
 
 // ══════════════════════════════════════════
@@ -1345,6 +1520,7 @@ function bind(id,key,dispId,fmt,cb){
     S[key]=parseFloat(el.value);
     const d=document.getElementById(dispId);
     if(d)d.textContent=fmt(S[key]);
+    saveAppData();
     if(cb)cb();
   });
 }
@@ -1378,6 +1554,7 @@ bind('sl-dr','dr','dv-dr',v=>(v/10).toFixed(1)+'%',()=>{if(document.getElementBy
 //  INIT
 // ══════════════════════════════════════════
 (function init(){
+  loadSavedData();
   // sync initial display labels
   document.getElementById('dv-saved').textContent=fw(S.saved);
   document.getElementById('dv-monthly').textContent=fw(S.monthly);
