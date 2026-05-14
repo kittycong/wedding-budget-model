@@ -1,4 +1,4 @@
-const SHEET_ID = 'PASTE_SPREADSHEET_ID_HERE';
+const SHEET_ID = '1Xv1b1D3f_7ys6FlF9O3y-TbuocdqvtNKV4An9J8wW-s';
 const SHEET_NAME = 'wedding_budget_data';
 
 function doGet(e) {
